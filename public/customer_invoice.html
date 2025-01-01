@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Payment</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Reset and Body Styling */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* Container Styling */
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            max-width: 600px;
+            width: 100%;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo {
+            display: block;
+            margin: 0 auto 20px;
+            max-width: 150px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        /* Invoice Details Styling */
+        .invoice-details p {
+            margin: 10px 0;
+            color: #555;
+            font-size: 1rem;
+        }
+
+        .invoice-details strong {
+            color: #333;
+        }
+
+        /* Payment Section Styling */
+        .payment-section {
+            margin-top: 20px;
+        }
+
+        .payment-section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        label {
+            display: block;
+            margin: 10px 0 5px;
+            color: #555;
+            font-size: 0.9rem;
+        }
+
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 0.95rem;
+            background-color: #f9f9f9;
+            transition: all 0.2s ease-in-out;
+        }
+
+        input[type="text"]:focus, input[type="number"]:focus {
+            border-color: #007bff;
+            outline: none;
+            background-color: #fff;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .toggle-custom-amount {
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .toggle-custom-amount input {
+            margin-right: 10px;
+        }
+
+        .custom-amount-section {
+            display: none;
+            margin-top: 10px;
+        }
+
+        .error {
+            color: red;
+            font-size: 0.85rem;
+            margin-top: -8px;
+            margin-bottom: 10px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            input[type="text"], input[type="number"], button {
+                font-size: 0.85rem;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="../images/logo.png" alt="Company Logo" class="logo">
+        <h1>Invoice Payment</h1>
+
+        <div class="invoice-details">
+            <p><strong>Invoice Number:</strong> <span id="invoiceNumber"></span></p>
+            <p><strong>Customer Name:</strong> <span id="customerName"></span></p>
+            <p><strong>Customer Email:</strong> <span id="customerEmail"></span></p>
+            <p><strong>Amount Due:</strong> <span id="amount"></span></p>
+            <p><strong>Status:</strong> <span id="status"></span></p>
+            <p><strong>Paid On:</strong> <span id="paidAt" style="display: none;"></span></p>
+            <div id="paymentsMade">
+                <h3>Payments Made:</h3>
+                <p>Loading...</p>
+            </div>
+        </div>
+
+        <!-- Payment Section -->
+        <div id="paymentSection" class="payment-section" style="display: none;">
+            <h2>Make a Payment</h2>
+            <div class="toggle-custom-amount">
+                <input type="checkbox" id="customAmountToggle">
+                <label for="customAmountToggle">Pay a Custom Amount</label>
+            </div>
+
+            <div id="customAmountSection" class="custom-amount-section">
+                <label for="customAmount">Enter Custom Amount:</label>
+                <input type="text" id="customAmount" name="customAmount" placeholder="$0.00" oninput="validateCustomAmount()">
+                <p id="customAmountError" class="error" style="display: none;">Amount cannot exceed the total due.</p>
+            </div>
+
+            <form id="paymentForm">
+                <label for="billingAddress">Billing Address:</label>
+                <input type="text" id="billingAddress" name="billingAddress" placeholder="Street Address" required>
+
+                <label for="billingCity">City:</label>
+                <input type="text" id="billingCity" name="billingCity" placeholder="City" required>
+
+                <label for="billingState">State:</label>
+                <input type="text" id="billingState" name="billingState" placeholder="State" maxlength="2" required>
+
+                <label for="billingZip">ZIP Code:</label>
+                <input type="text" id="billingZip" name="billingZip" placeholder="ZIP Code" maxlength="10" required>
+
+                <label for="cardNumber">Card Details:</label>
+                <input type="text" id="cardNumber" name="cardNumber" placeholder="1234-5678-9012-3456" maxlength="19" oninput="formatCardNumber()" required>
+
+                <label for="expirationDate">Exp:</label>
+                <input type="text" id="expirationDate" name="expirationDate" placeholder="MM/YY" maxlength="7" oninput="formatExpirationDate()" required>
+
+                <label for="cardCode">CVV:</label>
+                <input type="text" id="cardCode" name="cardCode" placeholder="123" maxlength="4" oninput="validateCVV()" required>
+
+                <button type="submit">Pay Now</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const queryParams = new URLSearchParams(window.location.search);
+        const invoiceId = queryParams.get('id');
+        let totalAmountDue = 0;
+
+        if (!invoiceId) {
+            alert('Invalid invoice ID.');
+            throw new Error('Invoice ID is missing or invalid.');
+        }
+
+        function fetchInvoiceDetails() {
+            fetch(`/invoices/${invoiceId}`)
+                .then((response) => {
+                    if (!response.ok) {
+                        throw new Error(`Failed to fetch invoice: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then((data) => {
+                    if (!data) {
+                        throw new Error('Invoice data is missing or invalid.');
+                    }
+                    updateInvoiceDetails(data);
+                })
+                .catch((error) => {
+                    console.error('Error fetching invoice details:', error);
+                    alert('Error loading invoice. Please try again later.');
+                });
+        }
+
+        function updateInvoiceDetails(data) {
+            const invoiceNumber = data.invoiceNumber || 'N/A';
+            const customerName = data.customerName || 'N/A';
+            const customerEmail = data.customerEmail || 'N/A';
+            const status = data.status || 'N/A';
+            const paidAt = data.paidAt ? new Date(data.paidAt).toLocaleString() : 'N/A';
+            const balance = data.balance || 0;
+            const payments = data.payments || [];
+
+            document.getElementById('invoiceNumber').textContent = invoiceNumber;
+            document.getElementById('customerName').textContent = customerName;
+            document.getElementById('customerEmail').textContent = customerEmail;
+            document.getElementById('amount').textContent = `$${balance.toFixed(2)}`;
+            document.getElementById('status').textContent = status;
+            document.getElementById('paidAt').textContent = paidAt;
+            document.getElementById('paidAt').style.display = data.paidAt ? 'inline' : 'none';
+
+            totalAmountDue = balance;
+
+            const paymentsSection = document.getElementById('paymentsMade');
+            paymentsSection.innerHTML = '<h3>Payments Made:</h3>';
+            if (payments.length > 0) {
+                payments.forEach((payment) => {
+                    if (payment && typeof payment.amount === 'number') {
+                        const paymentItem = document.createElement('p');
+                        paymentItem.textContent = `Amount: $${payment.amount.toFixed(2)} - Card: ****${payment.cardLast4 || 'N/A'} - Paid At: ${new Date(payment.paidAt).toLocaleString()}`;
+                        paymentsSection.appendChild(paymentItem);
+                    } else {
+                        console.warn('Invalid payment object:', payment);
+                    }
+                });
+            } else {
+                paymentsSection.innerHTML += '<p>No payments made yet.</p>';
+            }
+
+            if (status === 'Paid') {
+                document.getElementById('paymentSection').style.display = 'none';
+            } else {
+                document.getElementById('paymentSection').style.display = 'block';
+            }
+        }
+
+        document.getElementById('paymentForm').addEventListener('submit', (event) => {
+            event.preventDefault();
+
+            const customAmount = parseFloat(document.getElementById('customAmount').value) || totalAmountDue;
+            const isCustomPayment = document.getElementById('customAmountToggle').checked;
+
+            if (customAmount > totalAmountDue) {
+                document.getElementById('customAmountError').style.display = 'block';
+                return;
+            } else {
+                document.getElementById('customAmountError').style.display = 'none';
+            }
+
+            const formData = {
+                cardNumber: event.target.cardNumber.value.trim().replace(/ /g, ''),
+                expirationDate: event.target.expirationDate.value.trim(),
+                cardCode: event.target.cardCode.value.trim(),
+                amount: customAmount,
+                billingAddress: {
+                    street: event.target.billingAddress.value.trim(),
+                    city: event.target.billingCity.value.trim(),
+                    state: event.target.billingState.value.trim(),
+                    zip: event.target.billingZip.value.trim(),
+                },
+            };
+
+            const endpoint = isCustomPayment
+                ? `/invoices/${invoiceId}/custom-pay`
+                : `/invoices/${invoiceId}/pay`;
+
+            fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData),
+            })
+                .then((response) => {
+                    if (!response.ok) {
+                        throw new Error(`Payment failed: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(() => {
+                    alert('Payment Successful!');
+                    location.reload();
+                })
+                .catch((error) => {
+                    console.error('Error processing payment:', error);
+                    alert(`Error processing payment: ${error.message || 'Please try again.'}`);
+                });
+        });
+
+        fetchInvoiceDetails();
+
+        document.getElementById('cardNumber').addEventListener('input', function () {
+            const cardInput = this;
+            let value = cardInput.value.replace(/\D/g, '');
+            value = value.replace(/(.{4})/g, '$1 ').trim();
+            cardInput.value = value;
+        });
+
+        document.getElementById('expirationDate').addEventListener('input', function () {
+            const expInput = this;
+            let value = expInput.value.replace(/\D/g, '');
+            if (value.length > 2) value = value.slice(0, 2) + '/' + value.slice(2, 4);
+            expInput.value = value.slice(0, 5);
+        });
+    </script>
+</body>
+</html>
