@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Management</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Reset and Body Styling */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo {
+            display: block;
+            margin: 0 auto 20px;
+            max-width: 150px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        h2 {
+            color: #007bff;
+            margin-top: 20px;
+        }
+
+        label {
+            display: block;
+            margin: 10px 0 5px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        input[type="text"], input[type="email"], input[type="number"] {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .invoice-item {
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            background-color: #f9f9f9;
+        }
+
+        .invoice-item p {
+            margin: 5px 0;
+        }
+
+        .invoice-item a {
+            color: #007bff;
+            text-decoration: none;
+            margin-right: 10px;
+        }
+
+        .invoice-item a:hover {
+            text-decoration: underline;
+        }
+
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .popup {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            max-width: 600px;
+            width: 90%;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .close-btn {
+            background-color: red;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            float: right;
+        }
+
+        .line-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .line-item input {
+            width: calc(50% - 10px);
+            margin-right: 10px;
+        }
+
+        .add-line-item {
+            margin-top: 10px;
+            display: block;
+            background-color: #28a745;
+            color: #fff;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .add-line-item:hover {
+            background-color: #218838;
+        }
+
+        .delete-btn {
+            color: red;
+            cursor: pointer;
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+
+        .action-buttons button {
+            flex: 1;
+            margin: 0 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="/public/images/logo.png" alt="Company Logo" class="logo">
+        <h1>Invoice Management</h1>
+
+        <button id="createInvoiceBtn">Create Invoice</button>
+
+        <!-- Section to Display the List of Invoices -->
+        <h2>Manage Invoices</h2>
+        <div id="invoiceList">
+            <p>Loading invoices...</p>
+        </div>
+    </div>
+
+    <!-- Create/Edit Invoice Popup -->
+    <div id="popupOverlay" class="popup-overlay" style="display: none;">
+        <div class="popup">
+            <button class="close-btn" id="closePopup">X</button>
+            <h2 id="popupTitle">Create Invoice</h2>
+            <form id="popupCreateInvoiceForm">
+                <label for="customerName">Customer Name:</label>
+                <input type="text" id="popupCustomerName" name="customerName" required>
+
+                <label for="customerEmail">Customer Email:</label>
+                <input type="email" id="popupCustomerEmail" name="customerEmail" required>
+
+                <h3>Line Items</h3>
+                <div id="lineItems">
+                    <div class="line-item">
+                        <input type="text" placeholder="Description" required>
+                        <input type="number" placeholder="Amount" step="0.01" required>
+                    </div>
+                </div>
+                <button type="button" class="add-line-item" id="addLineItem">Add Line Item</button>
+
+                <div class="action-buttons">
+                    <button type="submit" id="saveInvoiceBtn">Save Invoice</button>
+                    <button type="button" id="deleteInvoiceBtn" style="display: none;">Delete Invoice</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const createInvoiceBtn = document.getElementById('createInvoiceBtn');
+        const popupOverlay = document.getElementById('popupOverlay');
+        const closePopup = document.getElementById('closePopup');
+        const popupCreateInvoiceForm = document.getElementById('popupCreateInvoiceForm');
+        const lineItemsContainer = document.getElementById('lineItems');
+        const addLineItem = document.getElementById('addLineItem');
+        const popupTitle = document.getElementById('popupTitle');
+        const saveInvoiceBtn = document.getElementById('saveInvoiceBtn');
+        const deleteInvoiceBtn = document.getElementById('deleteInvoiceBtn');
+
+        let currentInvoiceId = null;
+
+        // Show Popup
+        createInvoiceBtn.addEventListener('click', () => {
+            resetPopup();
+            popupTitle.textContent = 'Create Invoice';
+            popupOverlay.style.display = 'flex';
+        });
+
+        // Close Popup
+        closePopup.addEventListener('click', () => {
+            popupOverlay.style.display = 'none';
+        });
+
+        // Add Line Item
+        addLineItem.addEventListener('click', () => {
+            const lineItem = document.createElement('div');
+            lineItem.className = 'line-item';
+            lineItem.innerHTML = `
+                <input type="text" placeholder="Description" required>
+                <input type="number" placeholder="Amount" step="0.01" required>
+                <span class="delete-btn">&#x2715;</span>
+            `;
+
+            lineItem.querySelector('.delete-btn').addEventListener('click', () => {
+                lineItem.remove();
+            });
+
+            lineItemsContainer.appendChild(lineItem);
+        });
+
+        // Reset Popup
+        function resetPopup() {
+            popupCreateInvoiceForm.reset();
+            lineItemsContainer.innerHTML = `
+                <div class="line-item">
+                    <input type="text" placeholder="Description" required>
+                    <input type="number" placeholder="Amount" step="0.01" required>
+                </div>
+            `;
+            currentInvoiceId = null;
+            deleteInvoiceBtn.style.display = 'none';
+        }
+
+        // Submit Form with Nested Line Items
+        popupCreateInvoiceForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const lineItemsArray = Array.from(lineItemsContainer.children).map(item => {
+                const name = item.querySelector('input[type="text"]').value.trim();
+                const amount = parseFloat(item.querySelector('input[type="number"]').value);
+
+                if (!name || isNaN(amount) || amount <= 0) {
+                    return null; // Validation: Ensure name and amount are valid
+                }
+
+                return { name, amount };
+            });
+
+            // Validate line items
+            if (lineItemsArray.includes(null) || lineItemsArray.length === 0) {
+                alert('Each line item must include valid details.');
+                return;
+            }
+
+            const customerName = popupCreateInvoiceForm.customerName.value.trim();
+            const customerEmail = popupCreateInvoiceForm.customerEmail.value.trim();
+
+            // Interact with Authorize.Net API
+            const authCustomerId = await fetch('/authorize-customer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: customerName, email: customerEmail }),
+            })
+                .then(response => response.json())
+                .then(data => data.authCustomerId)
+                .catch(error => {
+                    console.error('Error interacting with Authorize.Net:', error);
+                    alert('Failed to retrieve customer ID from Authorize.Net.');
+                    return null;
+                });
+
+            if (!authCustomerId) return;
+
+            // Wrap items into a category structure as required by the backend
+            const lineItems = [
+                {
+                    category: "General", // Default category
+                    items: lineItemsArray,
+                    total: lineItemsArray.reduce((sum, item) => sum + item.amount, 0),
+                },
+            ];
+
+            const formData = {
+                customerName,
+                customerEmail,
+                authCustomerId,
+                lineItems,
+            };
+
+            const url = currentInvoiceId ? `/invoices/${currentInvoiceId}` : '/invoices';
+            const method = currentInvoiceId ? 'PUT' : 'POST';
+
+            fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData),
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(err => {
+                            throw new Error(err.message || 'Failed to save invoice.');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(() => {
+                    alert('Invoice saved successfully!');
+                    loadInvoices();
+                    popupOverlay.style.display = 'none';
+                })
+                .catch(error => {
+                    console.error('Error saving invoice:', error);
+                    alert('Error saving invoice. Please try again.');
+                });
+        });
+
+        // Load Invoices
+        function loadInvoices() {
+            fetch('/invoices')
+                .then(response => response.json())
+                .then(data => {
+                    const invoiceList = document.getElementById('invoiceList');
+                    invoiceList.innerHTML = '';
+
+                    if (data.length === 0) {
+                        invoiceList.innerHTML = '<p>No invoices found.</p>';
+                        return;
+                    }
+
+                    data.forEach(invoice => {
+                        const div = document.createElement('div');
+                        div.className = 'invoice-item';
+                        div.innerHTML = `
+                            <p><strong>Invoice Number:</strong> ${invoice.invoiceNumber || 'Unknown'}</p>
+                            <p><strong>Customer Name:</strong> ${invoice.customerName || 'Unknown'}</p>
+                            <p><strong>Amount:</strong> $${invoice.amount.toFixed(2)}</p>
+                            <p><strong>Status:</strong> ${invoice.status}</p>
+                            <button onclick="viewInvoice('${invoice._id}')">View</button>
+                            <button onclick="editInvoice('${invoice._id}')">Edit</button>
+                            <button onclick="deleteInvoice('${invoice._id}')" ${invoice.status === 'Paid' ? 'disabled' : ''}>Delete</button>
+                        `;
+                        invoiceList.appendChild(div);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading invoices:', error);
+                    document.getElementById('invoiceList').innerHTML = '<p>Error loading invoices.</p>';
+                });
+        }
+
+        // View Invoice
+        function viewInvoice(id) {
+            const newTab = window.open(`/customer_invoice?id=${id}`, '_blank');
+            if (!newTab) {
+                alert('Pop-up blocked. Please allow pop-ups for this website to view the invoice.');
+            }
+        }
+
+        // Edit Invoice
+        function editInvoice(id) {
+            fetch(`/invoices/${id}`)
+                .then(response => response.json())
+                .then(data => {
+                    resetPopup();
+                    popupTitle.textContent = 'Edit Invoice';
+                    popupCreateInvoiceForm.customerName.value = data.customerName;
+                    popupCreateInvoiceForm.customerEmail.value = data.customerEmail;
+
+                    lineItemsContainer.innerHTML = '';
+                    data.lineItems.forEach(item => {
+                        const lineItem = document.createElement('div');
+                        lineItem.className = 'line-item';
+                        lineItem.innerHTML = `
+                            <input type="text" value="${item.name}" required>
+                            <input type="number" value="${item.amount}" step="0.01" required>
+                            <span class="delete-btn">&#x2715;</span>
+                        `;
+                        lineItem.querySelector('.delete-btn').addEventListener('click', () => {
+                            lineItem.remove();
+                        });
+                        lineItemsContainer.appendChild(lineItem);
+                    });
+
+                    currentInvoiceId = id;
+                    deleteInvoiceBtn.style.display = 'inline';
+                    popupOverlay.style.display = 'flex';
+                })
+                .catch(error => {
+                    console.error('Error loading invoice:', error);
+                    alert('Error loading invoice details. Please try again.');
+                });
+        }
+
+        // Delete Invoice
+        deleteInvoiceBtn.addEventListener('click', () => {
+            if (!confirm('Are you sure you want to delete this invoice?')) return;
+
+            fetch(`/invoices/${currentInvoiceId}`, {
+                method: 'DELETE',
+            })
+                .then(response => {
+                    if (response.ok) {
+                        alert('Invoice deleted successfully!');
+                        loadInvoices();
+                        popupOverlay.style.display = 'none';
+                    } else {
+                        alert('Failed to delete invoice.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting invoice:', error);
+                    alert('Error deleting invoice. Please try again.');
+                });
+        });
+
+        // Load invoices on page load
+        loadInvoices();
+    </script>
+</body>
+</html>
